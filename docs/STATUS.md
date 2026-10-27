@@ -92,8 +92,8 @@ Windowsでは `py -3 scripts/audit.py --days 30 --open`。
 
 SSH/共有フォルダ取得と、Webへの数値同期を維持。WebのWindowsエージェントはログイン中に15分ごとに同期。Mac/Linux/WSLは手動。実Windowsへの初回導入・定期実行は未検証。既存の公開状況は各リポジトリで管理。
 
-- GitHub: https://github.com/fuji-kai-keiba/claude-history-audit （public / MIT）
-- Web: https://github.com/fuji-kai-keiba/claude-history-audit-web （別案件）
+- GitHub: https://github.com/SHOGO391/claude-history-audit （public / MIT）
+- Web: https://github.com/SHOGO391/claude-history-audit-web （別案件）
 
 未登録端末、削除済み履歴、Enterprise API接続、請求との自動突合、変更した引数での再試行検出、成果物品質の自動判定は対象外。Web同期は端末全履歴を毎回集計。差分同期・大量結果のストリーミング出力は今後の拡張。
 

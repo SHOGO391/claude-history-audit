@@ -2,9 +2,9 @@
 
 ## 脆弱性の報告 / Reporting a vulnerability
 
-履歴・認証情報の漏えい、意図しない外部通信、履歴内のデータによるコマンド実行、HTMLへのスクリプト混入などは、公開IssueやPull Requestに詳細を書かず、[GitHubの非公開脆弱性報告](https://github.com/fuji-kai-keiba/claude-history-audit/security/advisories/new) を利用してください。報告にはGitHubへのログインが必要です。
+履歴・認証情報の漏えい、意図しない外部通信、履歴内のデータによるコマンド実行、HTMLへのスクリプト混入などは、公開IssueやPull Requestに詳細を書かず、[GitHubの非公開脆弱性報告](https://github.com/SHOGO391/claude-history-audit/security/advisories/new) を利用してください。報告にはGitHubへのログインが必要です。
 
-Please report vulnerabilities privately using [GitHub private vulnerability reporting](https://github.com/fuji-kai-keiba/claude-history-audit/security/advisories/new). Reports in English or Japanese are welcome. Do not attach real transcripts, credentials, or private reports.
+Please report vulnerabilities privately using [GitHub private vulnerability reporting](https://github.com/SHOGO391/claude-history-audit/security/advisories/new). Reports in English or Japanese are welcome. Do not attach real transcripts, credentials, or private reports.
 
 報告には、影響するコミット・OS・Pythonバージョン、問題の概要、想定する影響、架空のデータを使った再現手順を含めてください。非公開窓口でも実際の会話本文・接続鍵・利用者情報は送らないでください。窓口が使えない場合は、詳細を含めず「非公開の連絡方法が必要」とだけIssueで知らせてください。
 

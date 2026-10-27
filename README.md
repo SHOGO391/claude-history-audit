@@ -1,6 +1,6 @@
 # Claude History Audit
 
-[![Tests](https://github.com/fuji-kai-keiba/claude-history-audit/actions/workflows/test.yml/badge.svg)](https://github.com/fuji-kai-keiba/claude-history-audit/actions/workflows/test.yml)
+[![Tests](https://github.com/SHOGO391/claude-history-audit/actions/workflows/test.yml/badge.svg)](https://github.com/SHOGO391/claude-history-audit/actions/workflows/test.yml)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -35,7 +35,7 @@ Python 3.13以降を推奨（3.9互換）。集計CLIには追加パッケージ
 **Claude Codeでこのリポジトリを開き「このPCの直近30日を監査して、改善策まで出して」と依頼できます。** `CLAUDE.md` が一連の手順へ案内するため、リポジトリ内で使う場合はスキルの別途インストールも不要です。Claudeが原文確認と完了検査まで進めます。
 
 ```bash
-git clone https://github.com/fuji-kai-keiba/claude-history-audit.git
+git clone https://github.com/SHOGO391/claude-history-audit.git
 cd claude-history-audit
 python3 scripts/audit.py --days 30 --open
 ```
@@ -293,7 +293,7 @@ python3 scripts/smoke_test.py
 
 ## 不具合報告・機能提案・開発への参加
 
-[Issues](https://github.com/fuji-kai-keiba/claude-history-audit/issues) とPull Requestを受け付けています。日本語・英語どちらでも構いません。再現手順や開発時の確認事項は [CONTRIBUTING.md](CONTRIBUTING.md) にまとめています。
+[Issues](https://github.com/SHOGO391/claude-history-audit/issues) とPull Requestを受け付けています。日本語・英語どちらでも構いません。再現手順や開発時の確認事項は [CONTRIBUTING.md](CONTRIBUTING.md) にまとめています。
 
 実際の会話履歴、監査レポート、接続設定、認証情報は添付せず、架空のデータで再現してください。情報漏えいなどの脆弱性は公開Issueに書かず、[セキュリティポリシー](SECURITY.md) の非公開窓口へ報告してください。
 
