@@ -231,7 +231,7 @@ class CodexTests(unittest.TestCase):
                 item['open_review']=dict(purpose='合成テストの完了待ち',necessary_work='完了確認',unlisted_issues='抜粋では他の問題なし',missing_information='実行に必要な時間')
         self.assertIn(finalize(out,notes)['status'],('reviewed','reviewed_with_limits'))
         for name in ('report.json','report.html','summary.md','review-plan.json'):
-            content=(out/name).read_text()
+            content=(out/name).read_text(encoding="utf-8")
             for private in ('PRIVATE_CANARY','PRIVATE_PATH','BASE64_PRIVATE','session_id: 7'):
                 self.assertNotIn(private,content)
         self.assertEqual(source.read_bytes(),original)

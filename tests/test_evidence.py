@@ -51,7 +51,7 @@ class EvidenceTests(unittest.TestCase):
             self.assertLessEqual(len(e['records']),3)
             self.assertTrue(all(len(r['untrusted_content'])<=TEXT_LIMIT for r in e['records']))
         for name in ('report.json','summary.md','report.html','review-plan.json'):
-            self.assertNotIn('PRIVATE_CANARY',(self.out/name).read_text())
+            self.assertNotIn('PRIVATE_CANARY',(self.out/name).read_text(encoding="utf-8"))
         self.assertEqual(self.source.read_bytes(),before)
 
     def test_pending_missing_and_duplicate_reviews_cannot_finalize(self):
@@ -87,18 +87,18 @@ class EvidenceTests(unittest.TestCase):
 
     def test_changed_source_invalidates_inspection(self):
         notes=self.reviewed()
-        self.source.write_text(self.source.read_text().replace('PRIVATE_CANARY','CHANGED_CANARY'))
+        self.source.write_text(self.source.read_text(encoding="utf-8").replace('PRIVATE_CANARY','CHANGED_CANARY'), encoding="utf-8")
         with self.assertRaisesRegex(ValueError,'変更・削除'):finalize(self.out,notes)
 
     def test_changed_before_inspection_is_not_available_as_original_evidence(self):
-        self.source.write_text(self.source.read_text().replace('PRIVATE_CANARY','CHANGED_CANARY'))
+        self.source.write_text(self.source.read_text(encoding="utf-8").replace('PRIVATE_CANARY','CHANGED_CANARY'), encoding="utf-8")
         plan=load(self.out/'review-plan.json')
         packet=inspect_item(self.out,plan['items'][0]['id'])
         self.assertTrue(all(not e['available'] for e in packet['excerpts']))
 
     def test_appending_history_does_not_invalidate_existing_evidence(self):
         notes=self.reviewed()
-        with self.source.open('a') as f:f.write('{}\n')
+        with self.source.open('a', encoding="utf-8") as f:f.write('{}\n')
         self.assertEqual(finalize(self.out,notes)['status'],'reviewed')
 
     def test_cross_report_or_fabricated_evidence_rejected(self):
@@ -146,14 +146,14 @@ class EvidenceTests(unittest.TestCase):
         notes['new_findings']=[added]
         state=finalize(self.out,notes)
         self.assertEqual(state['additional_findings'],1)
-        self.assertIn('合成例の別の反復',(self.out/'diagnosis-reviewed.private.md').read_text())
+        self.assertIn('合成例の別の反復',(self.out/'diagnosis-reviewed.private.md').read_text(encoding="utf-8"))
         added['evidence']=[{'file':'file-fake','line':999}]
         with self.assertRaises(ValueError):finalize(self.out,notes)
 
     def test_unselected_work_is_kept_in_final_completion_status(self):
         rows=[]
         for i in range(100):rows.extend(history('small-'+str(i),count=1))
-        self.source.write_text(''.join(json.dumps(r)+'\n' for r in rows))
+        self.source.write_text(''.join(json.dumps(r)+'\n' for r in rows), encoding="utf-8")
         report,local=audit([self.source],deep=True,prices=load_prices(ROOT/'app/claude_history_audit/reference_prices.json'))
         self.out=write_reports(self.root/'many',report,local)
         state=finalize(self.out,self.reviewed('necessary'))

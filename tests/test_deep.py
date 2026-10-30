@@ -39,7 +39,7 @@ class DeepTests(unittest.TestCase):
     def write(self, rows, name='one.jsonl'):
         path = self.source / name
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(''.join(json.dumps(r) + '\n' for r in rows))
+        path.write_text(''.join(json.dumps(r) + '\n' for r in rows), encoding="utf-8")
 
     def run_audit(self, **kwargs):
         return audit([self.source], deep=True, now=NOW, **kwargs)[0]

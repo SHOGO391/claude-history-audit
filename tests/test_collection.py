@@ -37,7 +37,7 @@ class CollectionTests(unittest.TestCase):
         self.source = self.root / 'remote-history'
         self.source.mkdir()
         self.log = self.source / 'session.jsonl'
-        self.log.write_text(json.dumps(row()) + '\n')
+        self.log.write_text(json.dumps(row()) + '\n', encoding="utf-8")
         self.ssh = {'kind': 'ssh', 'name': 'private-host-name', 'host': 'user@host', 'path': str(self.source)}
         self.config = {'version': 1, 'include_local': False, 'sources': [self.ssh]}
 
@@ -76,8 +76,8 @@ class CollectionTests(unittest.TestCase):
         self.assertEqual(c.read_config(config_path)['sources'], [])
 
     def test_export_only_jsonl_skips_symlinks_and_preserves_original(self):
-        (self.source / '.credentials.json').write_text('SECRET_NOT_FOR_TRANSFER')
-        (self.source / 'history.jsonl').write_text('PROMPT_INDEX')
+        (self.source / '.credentials.json').write_text('SECRET_NOT_FOR_TRANSFER', encoding="utf-8")
+        (self.source / 'history.jsonl').write_text('PROMPT_INDEX', encoding="utf-8")
         try:
             (self.source / 'linked.jsonl').symlink_to(self.log)
             (self.source / 'linked-dir').symlink_to(self.root, target_is_directory=True)
@@ -98,7 +98,7 @@ class CollectionTests(unittest.TestCase):
     def test_real_export_receiver_roundtrip_and_dedup(self):
         child = self.source / 'session-one' / 'subagents'
         child.mkdir(parents=True)
-        (child / 'agent-abc.jsonl').write_text(json.dumps(row('message-two', 'session-one')) + '\n')
+        (child / 'agent-abc.jsonl').write_text(json.dumps(row('message-two', 'session-one')) + '\n', encoding="utf-8")
         # Run exactly the SSH stdin program through a local Python process.
         with patch.object(c, 'ssh_command', return_value=[sys.executable, '-']):
             paths, status, private = c.collect(self.config, self.root / 'snapshot')
@@ -122,7 +122,7 @@ class CollectionTests(unittest.TestCase):
     def test_paths_are_data_not_shell_commands(self):
         strange = self.root / '$(touch INJECTED); spaces'
         strange.mkdir()
-        (strange / 'a.jsonl').write_text(self.log.read_text())
+        (strange / 'a.jsonl').write_text(self.log.read_text(encoding="utf-8"), encoding="utf-8")
         with patch.object(c, 'ssh_command', return_value=[sys.executable, '-']):
             archive = self.root / 'literal.zip'
             c.fetch_archive(dict(self.ssh, path=str(strange)), archive)
@@ -178,17 +178,17 @@ class CollectionTests(unittest.TestCase):
             self.assertFalse((self.root / 'strict').exists())
             result = main(['--sources-config', str(cp), '--all', '--allow-partial', '--output', str(self.root / 'partial')])
         self.assertEqual(result, 3)
-        report = json.loads((self.root / 'partial/report.json').read_text())
+        report = json.loads((self.root / 'partial/report.json').read_text(encoding="utf-8"))
         self.assertEqual(report['collection']['failed'], 1)
         self.assertEqual(report['coverage']['unique_requests'], 1)
-        self.assertIn('1件が失敗', (self.root / 'partial/report.html').read_text())
+        self.assertIn('1件が失敗', (self.root / 'partial/report.html').read_text(encoding="utf-8"))
 
     def test_registered_paths_are_automatically_collected(self):
         cp = self.root / 'config.json'
         c.save_config(cp, dict(self.config, sources=[{'kind': 'path', 'name': 'mounted', 'path': str(self.source)}]))
         with patch('claude_history_audit.cli.default_config', return_value=cp), patch('claude_history_audit.cli.state_home', return_value=self.root / 'state'):
             self.assertEqual(main(['--all', '--output', str(self.root / 'automatic')]), 0)
-        report = json.loads((self.root / 'automatic/report.json').read_text())
+        report = json.loads((self.root / 'automatic/report.json').read_text(encoding="utf-8"))
         self.assertEqual(report['collection']['mode'], 'registered')
         self.assertEqual(report['collection']['successful'], 1)
 
@@ -197,7 +197,7 @@ class CollectionTests(unittest.TestCase):
         c.save_config(cp, self.config)
         with patch('claude_history_audit.cli.default_config', return_value=cp), patch.object(c, 'fetch_archive', side_effect=AssertionError('must stay offline')):
             self.assertEqual(main(['--source', str(self.source), '--all', '--output', str(self.root / 'explicit')]), 0)
-        report = json.loads((self.root / 'explicit/report.json').read_text())
+        report = json.loads((self.root / 'explicit/report.json').read_text(encoding="utf-8"))
         self.assertEqual(report['collection']['mode'], 'paths')
 
     def test_collection_never_writes_inside_local_source(self):
