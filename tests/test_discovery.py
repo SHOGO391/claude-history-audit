@@ -77,7 +77,7 @@ class DiscoveryTests(unittest.TestCase):
         self.write(history('parent',output=20000),'parent/subagents/agent-a.jsonl')
         # Give child messages distinct IDs while retaining its parent's session ID.
         path=self.source/'parent/subagents/agent-a.jsonl'
-        rows=[json.loads(s) for s in path.read_text().splitlines()]
+        rows=[json.loads(s) for s in path.read_text(encoding="utf-8").splitlines()]
         for r in rows:r['message']['id']='child-'+r['message']['id']
         self.write(rows,'parent/subagents/agent-a.jsonl')
         d=self.discover()

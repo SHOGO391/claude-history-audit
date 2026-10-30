@@ -94,7 +94,7 @@ class AuditTests(unittest.TestCase):
         row = response()
         row.pop("timestamp")
         path = self.write([row, response("partial", usage={"input_tokens": 50, "output_tokens": -1})])
-        with path.open("a") as f:
+        with path.open("a", encoding="utf-8") as f:
             f.write('{bad\n[]\n')
         r = self.run_audit()
         self.assertEqual(r["coverage"]["malformed_lines"], 2)
@@ -168,11 +168,11 @@ class AuditTests(unittest.TestCase):
         r, mapping = audit([self.source], now=NOW)
         dest = write_reports(self.root / "out", r, mapping)
         for name in ("report.json", "summary.md", "report.html"):
-            data = (dest / name).read_text()
+            data = (dest / name).read_text(encoding="utf-8")
             self.assertNotIn(secret, data)
             self.assertNotIn("SecretClient", data)
             self.assertNotIn(str(self.source), data)
-        self.assertIn(secret, (dest / "local-map.json").read_text())
+        self.assertIn(secret, (dest / "local-map.json").read_text(encoding="utf-8"))
         if os.name != "nt":
             self.assertEqual((dest / "local-map.json").stat().st_mode & 0o777, 0o600)
 
@@ -209,7 +209,7 @@ class AuditTests(unittest.TestCase):
     def test_price_book_rejects_nonfinite_and_negative(self):
         p = self.root / "prices.json"
         for value in (-1, float("nan"), True):
-            p.write_text(json.dumps({"models": {"claude-sonnet-4-6": {"input": value}}}))
+            p.write_text(json.dumps({"models": {"claude-sonnet-4-6": {"input": value}}}), encoding="utf-8")
             with self.assertRaises(ValueError):
                 load_prices(p)
 
@@ -249,7 +249,7 @@ class AuditTests(unittest.TestCase):
             self.assertEqual(main(args), 0)
             self.assertEqual(main(args), 2)
         self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), before)
-        r = json.loads((self.root / "out" / "report.json").read_text())
+        r = json.loads((self.root / "out" / "report.json").read_text(encoding="utf-8"))
         self.assertEqual(r["coverage"]["unique_requests"], 1)
 
     def test_cli_rejects_output_inside_source(self):
@@ -262,7 +262,7 @@ class AuditTests(unittest.TestCase):
     def test_custom_config_directory(self):
         config = self.root / "config"
         (config / "projects").mkdir(parents=True)
-        (config / "projects" / "one.jsonl").write_text(json.dumps(response()) + "\n")
+        (config / "projects" / "one.jsonl").write_text(json.dumps(response()) + "\n", encoding="utf-8")
         with patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(config)}), contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(main(["--all", "--output", str(self.root / "out")]), 0)
 

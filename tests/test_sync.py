@@ -23,7 +23,7 @@ class SyncTests(unittest.TestCase):
         self.root=Path(self.temp.name);self.source=self.root/'history';self.source.mkdir()
         self.config={'version':1,'origin':'https://audit.example.test','device_id':'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa','token':'b'*64,'sync_salt':'c'*64,'platform_access':'SYNTHETIC-PLATFORM-CREDENTIAL'}
         self.row={'type':'assistant','sessionId':'PRIVATE_SESSION_ID','timestamp':'2026-10-01T00:00:00Z','message':{'id':'PRIVATE_MESSAGE_ID','model':'claude-sonnet-4-6','content':[{'type':'text','text':'PRIVATE_TRANSCRIPT_TEXT'}],'usage':{'input_tokens':100,'output_tokens':20,'cache_creation_input_tokens':200,'cache_read_input_tokens':1000}}}
-        self.log=self.source/'private-project.jsonl';self.log.write_text(json.dumps(self.row)+'\n')
+        self.log=self.source/'private-project.jsonl';self.log.write_text(json.dumps(self.row)+'\n', encoding="utf-8")
         self.now=datetime(2026,10,5,tzinfo=timezone.utc)
 
     def test_sync_ids_are_stable_across_devices_and_all_fields_are_allowlisted(self):
@@ -44,11 +44,11 @@ class SyncTests(unittest.TestCase):
         p=sync.payloads(self.config,[self.source],now=self.now)[0]
         self.assertEqual(p['summary']['requests'],1)
         self.assertEqual(before,hashlib.sha256(self.log.read_bytes()).hexdigest())
-        with self.log.open('a') as f:f.write(json.dumps(self.row)+'\n')
+        with self.log.open('a', encoding="utf-8") as f:f.write(json.dumps(self.row)+'\n')
         self.assertEqual(sync.payloads(self.config,[self.source],now=self.now)[0]['records'],p['records'])
 
     def test_batches_and_empty_history(self):
-        with self.log.open('w') as f:
+        with self.log.open('w', encoding="utf-8") as f:
             for i in range(501):
                 r=copy.deepcopy(self.row);r['message']['id']=str(i);f.write(json.dumps(r)+'\n')
         chunks=sync.payloads(self.config,[self.source],now=self.now)
@@ -64,9 +64,9 @@ class SyncTests(unittest.TestCase):
     def test_config_rejects_insecure_or_credential_bearing_url(self):
         path=self.root/'device.json'
         for origin in ['http://audit.example.test','https://user:pass@audit.example.test','https://audit.example.test/evil','https://audit.example.test?query=x']:
-            path.write_text(json.dumps(dict(self.config,origin=origin)))
+            path.write_text(json.dumps(dict(self.config,origin=origin)), encoding="utf-8")
             with self.assertRaises(ValueError):sync.read_device(path)
-        path.write_text(json.dumps(self.config));self.assertEqual(sync.read_device(path)['origin'],self.config['origin'])
+        path.write_text(json.dumps(self.config), encoding="utf-8");self.assertEqual(sync.read_device(path)['origin'],self.config['origin'])
 
     def test_http_transport_sends_only_payload_and_rejects_redirects(self):
         payload=sync.payloads(self.config,[self.source],now=self.now)[0]
@@ -98,7 +98,7 @@ class SyncTests(unittest.TestCase):
     def test_success_status_has_no_authentication_data(self):
         status=self.root/'status.json'
         with patch.object(sync,'send',return_value={'ok':True,'complete':True}):sync.synchronize(self.config,[self.source],status)
-        out=json.loads(status.read_text());self.assertEqual(out['requests'],1)
+        out=json.loads(status.read_text(encoding="utf-8"));self.assertEqual(out['requests'],1)
         self.assertEqual(set(out),{'last_success','requests','parts'})
 
     def test_concurrent_sync_is_refused_and_lock_is_released(self):
@@ -125,12 +125,12 @@ class SyncTests(unittest.TestCase):
         self.assertNotEqual(first['requests'][0]['id'],second['requests'][0]['id'])
 
     def test_windows_install_registers_current_user_task_and_saves_custom_source(self):
-        config_path=self.root/'device.json';config_path.write_text(json.dumps(self.config))
+        config_path=self.root/'device.json';config_path.write_text(json.dumps(self.config), encoding="utf-8")
         source_bundle=self.root/'download.pyz';source_bundle.write_bytes(b'SYNTHETIC_BUNDLE')
         destination=self.root/'installed'
         with patch.object(sync.sys,'platform','win32'),patch.object(sync.sys,'argv',[str(source_bundle)]),patch.object(sync,'device_home',return_value=destination),patch.object(sync.subprocess,'run',return_value=SimpleNamespace(returncode=0)) as run:
             config,path=sync.install(config_path,[self.source])
-        self.assertEqual(json.loads(path.read_text())['sources'],[str(self.source)])
+        self.assertEqual(json.loads(path.read_text(encoding="utf-8"))['sources'],[str(self.source)])
         self.assertEqual((destination/'audit-agent.pyz').read_bytes(),b'SYNTHETIC_BUNDLE')
         args=run.call_args[0][0]
         self.assertEqual(args[:6],['schtasks','/Create','/SC','MINUTE','/MO','15'])
@@ -139,7 +139,7 @@ class SyncTests(unittest.TestCase):
         self.assertNotIn(self.config['platform_access'],' '.join(args))
 
     def test_scheduler_failure_is_not_reported_as_installed(self):
-        config_path=self.root/'device.json';config_path.write_text(json.dumps(self.config))
+        config_path=self.root/'device.json';config_path.write_text(json.dumps(self.config), encoding="utf-8")
         bundle=self.root/'download.pyz';bundle.write_bytes(b'SYNTHETIC_BUNDLE')
         with patch.object(sync.sys,'platform','win32'),patch.object(sync.sys,'argv',[str(bundle)]),patch.object(sync,'device_home',return_value=self.root/'installed'),patch.object(sync.subprocess,'run',return_value=SimpleNamespace(returncode=1)):
             with self.assertRaisesRegex(ValueError,'タスク登録に失敗'):
