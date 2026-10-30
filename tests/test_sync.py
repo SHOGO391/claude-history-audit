@@ -1,3 +1,4 @@
+import contextlib
 import copy
 import hashlib
 import io
@@ -124,12 +125,19 @@ class SyncTests(unittest.TestCase):
         first,_=audit([self.source]);second,_=audit([self.source])
         self.assertNotEqual(first['requests'][0]['id'],second['requests'][0]['id'])
 
+    def test_messages_do_not_crash_on_a_cp1252_pipe(self):
+        raw=io.BytesIO();stream=io.TextIOWrapper(raw,encoding='cp1252')
+        with patch.object(sync.sys,'stdout',stream):
+            sync.safe_stdio();print('15分ごとの自動同期を登録しました')
+        stream.flush();self.assertIn(b'15\\u5206',raw.getvalue())
+
     def test_windows_install_registers_current_user_task_and_saves_custom_source(self):
         config_path=self.root/'device.json';config_path.write_text(json.dumps(self.config), encoding="utf-8")
         source_bundle=self.root/'download.pyz';source_bundle.write_bytes(b'SYNTHETIC_BUNDLE')
         destination=self.root/'installed'
         with patch.object(sync.sys,'platform','win32'),patch.object(sync.sys,'argv',[str(source_bundle)]),patch.object(sync,'device_home',return_value=destination),patch.object(sync.subprocess,'run',return_value=SimpleNamespace(returncode=0)) as run:
-            config,path=sync.install(config_path,[self.source])
+            with contextlib.redirect_stdout(io.StringIO()) as out:config,path=sync.install(config_path,[self.source])
+        self.assertIn('15分ごと',out.getvalue())
         self.assertEqual(json.loads(path.read_text(encoding="utf-8"))['sources'],[str(self.source)])
         self.assertEqual((destination/'audit-agent.pyz').read_bytes(),b'SYNTHETIC_BUNDLE')
         args=run.call_args[0][0]

@@ -90,6 +90,8 @@ def usage_main(argv):
 
 
 def main(argv=None):
+    from .sync import safe_stdio
+    safe_stdio()
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] == "usage":
         return usage_main(argv[1:])
