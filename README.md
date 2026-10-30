@@ -201,7 +201,7 @@ python3 audit-agent.pyz status --config device.json
 
 導入先はWindowsの `%LOCALAPPDATA%\ClaudeHistoryAudit`、Mac/Linuxの `~/.claude-history-audit/device`。Windowsタスクは `ClaudeHistoryAudit-<端末ID>`。`device.json` とダウンロードZIPは接続鍵を含むため、共有やGitへの追加をしないでください。同期停止はWebの「接続を解除」、ローカルタスク削除は `python audit-agent.pyz uninstall --config device.json`。設定ファイルや受信済みの集計は自動削除しません。
 
-接続できない場合は次回の定期実行で再試行します。全分割データの受信が確認できるまで成功にしません。各回、端末に残る履歴全体を集計・送信するため、大規模利用では差分同期への拡張が必要です。Webに既に届いた使用量は端末側の履歴削除後も残ります。
+接続できない場合は次回の定期実行で再試行します。全分割データの受信が確認できるまで成功にしません。各回、端末に残る履歴全体を集計・送信します（受信側は届いた件数が端末の全件数と一致したときに完了とするため、差分だけは送れません）。同じ端末で同期が重なった場合、後から起動した側は送信せずに終了します。大規模利用では受信側を含めた差分同期への拡張が必要です。Webに既に届いた使用量は端末側の履歴削除後も残ります。
 
 配布ツールの生成: `python3 scripts/build_agent.py --output /tmp/audit-agent.pyz`。標準ライブラリのみの独立したPythonアプリになります。
 

@@ -101,6 +101,19 @@ class SyncTests(unittest.TestCase):
         out=json.loads(status.read_text());self.assertEqual(out['requests'],1)
         self.assertEqual(set(out),{'last_success','requests','parts'})
 
+    def test_concurrent_sync_is_refused_and_lock_is_released(self):
+        status=self.root/'status.json'
+        with patch.object(sync,'send',return_value={'ok':True,'complete':True}) as send:
+            with sync.single_run(self.root/'sync.lock'):
+                with self.assertRaisesRegex(ValueError,'別の同期'):sync.synchronize(self.config,[self.source],status)
+            self.assertFalse(send.called)
+            self.assertFalse(status.exists())
+            sync.synchronize(self.config,[self.source],status)
+        self.assertTrue(status.exists())
+        with patch.object(sync,'send',side_effect=ValueError('failed')):
+            with self.assertRaises(ValueError):sync.synchronize(self.config,[self.source],status)
+        with sync.single_run(self.root/'sync.lock'):pass
+
     def test_windows_command_keeps_spaced_paths_as_arguments(self):
         result=sync.windows_command('C:\\Program Files\\Python\\pythonw.exe','C:\\User Space\\agent.pyz','C:\\User Space\\device.json')
         self.assertIn('"C:\\Program Files\\Python\\pythonw.exe"',result)

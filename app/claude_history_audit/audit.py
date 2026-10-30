@@ -242,7 +242,7 @@ def audit(sources, since=None, until=None, prices=None, now=None, identity_key=N
                 stats["missing_session_ids"] += 1
             codex = row.get('_codex')
             native = codex is not None
-            is_subagent = codex['subagent'] if native else "subagents" in path.parts
+            is_subagent = codex['subagent'] if native else path.parent.name == "subagents"
             execution = raw_session + ":agent:" + path.stem if is_subagent and not native else raw_session
             sid = alias("session-codex" if native else "session", execution)
             if detail:

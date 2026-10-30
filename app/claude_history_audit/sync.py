@@ -1,5 +1,6 @@
 """Allowlisted numeric synchronization. Never transmit transcripts or evidence maps."""
 import argparse
+import contextlib
 import json
 import math
 import os
@@ -125,16 +126,44 @@ def private_json(path, value):
         if os.path.exists(name): os.unlink(name)
 
 
+@contextlib.contextmanager
+def single_run(path):
+    """One sync per device folder. The OS drops the lock when the holder exits, so a crash leaves no stale lock."""
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    handle = os.fdopen(os.open(str(path), os.O_RDWR | os.O_CREAT, 0o600), 'r+b')
+    try:
+        try:
+            if sys.platform == 'win32':
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            raise ValueError('別の同期が実行中です。終了後に再実行してください。') from None
+        try:
+            yield
+        finally:
+            if sys.platform == 'win32':
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    finally:
+        handle.close()
+
+
 def synchronize(config, sources=None, status_path=None):
-    chunks = payloads(config, sources)
-    for chunk in chunks:
-        result = send(config, chunk)
-    if result.get('complete') is not True:
-        raise ValueError('サーバー上で全件の受信を確認できませんでした。')
-    status = {'last_success':iso(datetime.now(timezone.utc)), 'requests':chunks[0]['summary']['requests'], 'parts':len(chunks)}
-    if status_path:
-        private_json(status_path, status)
-    return status
+    # Each run resends the full history: /api/sync completes a run only when the
+    # received records add up to summary.requests, so a delta cannot complete.
+    with (single_run(status_path.parent / 'sync.lock') if status_path else contextlib.nullcontext()):
+        chunks = payloads(config, sources)
+        for chunk in chunks:
+            result = send(config, chunk)
+        if result.get('complete') is not True:
+            raise ValueError('サーバー上で全件の受信を確認できませんでした。')
+        status = {'last_success':iso(datetime.now(timezone.utc)), 'requests':chunks[0]['summary']['requests'], 'parts':len(chunks)}
+        if status_path:
+            private_json(status_path, status)
+        return status
 
 
 def windows_command(executable, bundle, config):
