@@ -199,7 +199,14 @@ def install(config_path, source_paths=None):
     return config, destination
 
 
+def safe_stdio():
+    """Escape characters the console or pipe cannot encode (e.g. cp1252) instead of crashing on Japanese messages."""
+    for stream in (sys.stdout,sys.stderr):
+        with contextlib.suppress(AttributeError,ValueError):stream.reconfigure(errors='backslashreplace')
+
+
 def main(argv=None):
+    safe_stdio()
     parser=argparse.ArgumentParser(description='監査Web画面へ数値だけを同期する端末ツール')
     parser.add_argument('action',choices=['sync','install','status','uninstall'])
     parser.add_argument('--config',type=Path,default=device_home()/'device.json')
