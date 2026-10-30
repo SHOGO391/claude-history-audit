@@ -114,6 +114,14 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(r["coverage"]["unique_requests"], 2)
         self.assertEqual(sum(s["subagent"] for s in r["sessions"]), 1)
 
+    def test_source_path_named_subagents_does_not_mark_every_session(self):
+        self.source = self.root / "subagents" / "input"
+        self.write([response("parent")])
+        self.write([response("child", session="child")], "one/subagents/agent-a.jsonl")
+        r = self.run_audit()
+        self.assertEqual(len(r["sessions"]), 2)
+        self.assertEqual(sum(s["subagent"] for s in r["sessions"]), 1)
+
     def test_subagent_using_parent_session_id_is_separate_execution(self):
         self.write([response()])
         self.write([response("child", session="session-1")], "one/subagents/agent-a.jsonl")
@@ -165,7 +173,8 @@ class AuditTests(unittest.TestCase):
             self.assertNotIn("SecretClient", data)
             self.assertNotIn(str(self.source), data)
         self.assertIn(secret, (dest / "local-map.json").read_text())
-        self.assertEqual((dest / "local-map.json").stat().st_mode & 0o777, 0o600)
+        if os.name != "nt":
+            self.assertEqual((dest / "local-map.json").stat().st_mode & 0o777, 0o600)
 
     def test_html_escapes_all_dynamic_values(self):
         self.write([response()])
@@ -213,8 +222,11 @@ class AuditTests(unittest.TestCase):
 
     def test_symlinks_are_not_followed(self):
         self.write([response()])
-        (self.source / "linked.jsonl").symlink_to(self.source / "one.jsonl")
-        (self.source / "cycle").symlink_to(self.source, target_is_directory=True)
+        try:
+            (self.source / "linked.jsonl").symlink_to(self.source / "one.jsonl")
+            (self.source / "cycle").symlink_to(self.source, target_is_directory=True)
+        except OSError:
+            self.skipTest("This Windows account cannot create symlinks")
         files, skipped, _ = discover([self.source])
         self.assertEqual(len(files), 1)
         self.assertEqual(skipped, 2)

@@ -63,8 +63,28 @@ def export(options, output):
         archive.writestr("manifest.json", manifest)
 
 
+class _Stream:
+    """Non-seekable writer with a counted position. Windows pipes report a bogus tell()."""
+    def __init__(self, raw):
+        self.raw, self.position = raw, 0
+
+    def write(self, data):
+        self.raw.write(data)
+        self.position += len(data)
+        return len(data)
+
+    def tell(self):
+        return self.position
+
+    def seekable(self):
+        return False
+
+    def flush(self):
+        self.raw.flush()
+
+
 if __name__ == "__main__":
     try:
-        export(OPTIONS, sys.stdout.buffer)
+        export(OPTIONS, _Stream(sys.stdout.buffer))
     except Exception:
         sys.exit(2)

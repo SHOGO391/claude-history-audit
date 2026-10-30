@@ -69,7 +69,8 @@ class CollectionTests(unittest.TestCase):
         with patch.object(c, 'fetch_archive', side_effect=AssertionError('unexpected network')):
             self.assertEqual(c.sources_main(['--config', str(config_path), 'add-ssh', 'work', 'user@host']), 0)
             self.assertEqual(c.sources_main(['--config', str(config_path), 'add-ssh', 'work', 'user@host']), 2)
-        self.assertEqual(stat.S_IMODE(config_path.stat().st_mode), 0o600)
+        if os.name != 'nt':
+            self.assertEqual(stat.S_IMODE(config_path.stat().st_mode), 0o600)
         self.assertEqual(c.read_config(config_path)['sources'][0]['host'], 'user@host')
         self.assertEqual(c.sources_main(['--config', str(config_path), 'remove', 'work']), 0)
         self.assertEqual(c.read_config(config_path)['sources'], [])
@@ -77,8 +78,11 @@ class CollectionTests(unittest.TestCase):
     def test_export_only_jsonl_skips_symlinks_and_preserves_original(self):
         (self.source / '.credentials.json').write_text('SECRET_NOT_FOR_TRANSFER')
         (self.source / 'history.jsonl').write_text('PROMPT_INDEX')
-        (self.source / 'linked.jsonl').symlink_to(self.log)
-        (self.source / 'linked-dir').symlink_to(self.root, target_is_directory=True)
+        try:
+            (self.source / 'linked.jsonl').symlink_to(self.log)
+            (self.source / 'linked-dir').symlink_to(self.root, target_is_directory=True)
+        except OSError:
+            self.skipTest('This Windows account cannot create symlinks')
         before = hashlib.sha256(self.log.read_bytes()).hexdigest()
         out = io.BytesIO()
         export({'path': str(self.source), 'max_bytes': 100000}, out)
@@ -110,9 +114,10 @@ class CollectionTests(unittest.TestCase):
         for secret in ['PRIVATE_TRANSCRIPT_SENTINEL', str(self.source), 'user@host', 'private-host-name']:
             self.assertNotIn(secret, public)
         self.assertIn('remote_root', private['source-001'])
-        for p in paths[0].rglob('*.jsonl'):
-            self.assertEqual(stat.S_IMODE(p.stat().st_mode), 0o600)
-        self.assertEqual(stat.S_IMODE((self.root / 'snapshot').stat().st_mode), 0o700)
+        if os.name != 'nt':
+            for p in paths[0].rglob('*.jsonl'):
+                self.assertEqual(stat.S_IMODE(p.stat().st_mode), 0o600)
+            self.assertEqual(stat.S_IMODE((self.root / 'snapshot').stat().st_mode), 0o700)
 
     def test_paths_are_data_not_shell_commands(self):
         strange = self.root / '$(touch INJECTED); spaces'
@@ -209,7 +214,10 @@ class CollectionTests(unittest.TestCase):
             self.assertEqual(main(['--sources-config', str(cp), '--output', str(self.source)]), 2)
 
     def test_symlink_only_source_is_partial_not_empty_success(self):
-        (self.source / 'alias.jsonl').symlink_to(self.log)
+        try:
+            (self.source / 'alias.jsonl').symlink_to(self.log)
+        except OSError:
+            self.skipTest('This Windows account cannot create symlinks')
         config = dict(self.config, sources=[{'kind': 'path', 'name': 'mounted', 'path': str(self.source)}])
         paths, status, _ = c.collect(config, self.root / 'snapshot')
         self.assertEqual(status['failed'], 1)

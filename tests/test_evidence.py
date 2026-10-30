@@ -163,7 +163,10 @@ class EvidenceTests(unittest.TestCase):
     def test_symlink_history_not_read_during_review(self):
         backup=self.root/'backup.jsonl'
         self.source.rename(backup)
-        self.source.symlink_to(backup)
+        try:
+            self.source.symlink_to(backup)
+        except OSError:
+            self.skipTest('This Windows account cannot create symlinks')
         plan=load(self.out/'review-plan.json')
         packet=inspect_item(self.out,plan['items'][0]['id'])
         self.assertTrue(all(not e['available'] for e in packet['excerpts']))
